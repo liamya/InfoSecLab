@@ -89,7 +89,7 @@ class PointInf(object):
         # Make sure to output the correct kind of object depending on whether "other" is a Point object or a PointInf object 
         if isinstance(other, PointInf):
             return self
-        else:
+        elif isinstance(other, Point):
             return other
 
 
@@ -104,7 +104,7 @@ class Point(object):
         self.p = self.curve.p
         self.on_curve = True
         if not self.curve.on_curve(self.x, self.y):
-            warnings.warn("Point (%d, %d) is not on curve \"%s\"" % (self.x, self.y, self.curve))
+            # warnings.warn("Point (%d, %d) is not on curve \"%s\"" % (self.x, self.y, self.curve))
             self.on_curve = False
 
     def is_equal(self, other):
@@ -119,9 +119,9 @@ class Point(object):
 
     def double(self):
         # Write a function that doubles a Point object and returns the resulting Point object
-        lam = (3*((self.x)**2)+self.curve.a) *  mod_inv(2*self.y, self.p) % self.p
+        lam = (3*(self.x**2)+self.curve.a) *  mod_inv(2*self.y, self.p) % self.p
         x2 = (lam**2 - (2*self.x)) % self.p
-        y2 = -(self.y + lam * (x2 - self.x)) % self.p
+        y2 = (-(self.y + lam * (x2 - self.x))) % self.p
         return Point(self.curve, x2, y2)
 
     def add(self, other):
@@ -134,7 +134,7 @@ class Point(object):
             elif self.x == other.x and self.y != other.y:
                 return PointInf(self.curve)
             else:
-                lam = (self.y - other.y) * mod_inv(self.x - other.x, self.p) % self.p
+                lam = (self.y - other.y) * mod_inv(self.x - other.x, self.p)
                 x2 = (lam**2 - self.x - other.y) % self.p
                 y2 = -(self.y + lam * (self.x - other.x)) % self.p
                 return Point(self.curve, x2, y2)
@@ -153,7 +153,7 @@ class Point(object):
                 point = point.double()
                 if(bit == '1'):
                     point = point.add(self)
-
+        return point
 
 
     def scalar_multiply_Montgomery_Ladder(self, scalar):
