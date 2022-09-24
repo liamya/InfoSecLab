@@ -63,7 +63,6 @@ class Curve(object):
 
 # A point at infinity on an elliptic curve is represented separately as an object of type PointInf. 
 # We make this distinction between a point at infinity and a regular point purely for the ease of implementation.
-# @wongw note: -O = O, O + O = O, O + P = p
 class PointInf(object):
 
     def __init__(self, curve):
@@ -77,20 +76,17 @@ class PointInf(object):
     def negate(self):
         # Write a function that negates a PointInf object.        
         # Ths is an optional extension and is not evaluated
-        return self
+        raise NotImplementedError()
 
     def double(self):
         # Write a function that doubles a PointInf object.
-        return self
+        raise NotImplementedError()
 
     def add(self, other):
         # Write a function that adds a Point object (or a PointInf object) to a PointInf object. 
         # See below for the description of a Point object
         # Make sure to output the correct kind of object depending on whether "other" is a Point object or a PointInf object 
-        if isinstance(other, PointInf):
-            return self
-        elif isinstance(other, Point):
-            return other
+        raise NotImplementedError()
 
 
 # A point on an elliptic curve is represented as an object of type Point. 
@@ -104,7 +100,7 @@ class Point(object):
         self.p = self.curve.p
         self.on_curve = True
         if not self.curve.on_curve(self.x, self.y):
-            # warnings.warn("Point (%d, %d) is not on curve \"%s\"" % (self.x, self.y, self.curve))
+            warnings.warn("Point (%d, %d) is not on curve \"%s\"" % (self.x, self.y, self.curve))
             self.on_curve = False
 
     def is_equal(self, other):
@@ -119,42 +115,17 @@ class Point(object):
 
     def double(self):
         # Write a function that doubles a Point object and returns the resulting Point object
-        lam = (3*(self.x**2)+self.curve.a) *  mod_inv(2*self.y, self.p) % self.p
-        x2 = (lam**2 - (2*self.x)) % self.p
-        y2 = (-(self.y + lam * (x2 - self.x))) % self.p
-        return Point(self.curve, x2, y2)
+        raise NotImplementedError()
 
     def add(self, other):
         # Write a function that adds a Point object (or a PointInf object) to the current Point object and returns the resulting Point object
-        if isinstance(other, PointInf):
-            return self
-        elif isinstance(other, Point):
-            if self.is_equal(other):
-                return self.double()
-            elif self.x == other.x and self.y != other.y:
-                return PointInf(self.curve)
-            else:
-                lam = (self.y - other.y) * mod_inv(self.x - other.x, self.p)
-                x2 = (lam**2 - self.x - other.y) % self.p
-                y2 = -(self.y + lam * (self.x - other.x)) % self.p
-                return Point(self.curve, x2, y2)
-
+        raise NotImplementedError()
 
     def scalar_multiply(self, scalar):
         # Write a function that performs a scalar multiplication on the current Point object and returns the resulting Point object 
         # Make sure to check that the scalar is of type int or long
         # Your function need not be "constant-time"
-        if not isinstance(scalar, int):
-            raise TypeError("Only integers are allowed")
-        else:
-            point = Point(self.curve, self.x, self.y)
-            bin = '{0:b}'.format(scalar)
-            for bit in bin:
-                point = point.double()
-                if(bit == '1'):
-                    point = point.add(self)
-        return point
-
+        raise NotImplementedError()
 
     def scalar_multiply_Montgomery_Ladder(self, scalar):
         # Write a function that performs a "constant-time" scalar multiplication on the current Point object and returns the resulting Point object 
