@@ -76,17 +76,20 @@ class PointInf(object):
     def negate(self):
         # Write a function that negates a PointInf object.        
         # Ths is an optional extension and is not evaluated
-        raise NotImplementedError()
+        return PointInf(self.curve)
 
     def double(self):
         # Write a function that doubles a PointInf object.
-        raise NotImplementedError()
+        return PointInf(self.curve)
 
     def add(self, other):
         # Write a function that adds a Point object (or a PointInf object) to a PointInf object. 
         # See below for the description of a Point object
         # Make sure to output the correct kind of object depending on whether "other" is a Point object or a PointInf object 
-        raise NotImplementedError()
+        if isinstance(self, other):
+            return PointInf(self.curve)
+        else:
+            return Point(self.curve, other.x, other.y)
 
 
 # A point on an elliptic curve is represented as an object of type Point. 
@@ -111,22 +114,49 @@ class Point(object):
     def negate(self):
         # Write a function that negates a Point object and returns the resulting Point object
         # Ths is an optional extension and is not evaluated
-        raise NotImplementedError()
+        y2 = (-self.y) % self.p
+        return Point(self.curve, self.x, y2)
 
     def double(self):
         # Write a function that doubles a Point object and returns the resulting Point object
-        raise NotImplementedError()
+        lam = (3 * (self.x**2) + self.curve.a) * mod_inv(2 * self.y, self.p) % self.p
+        xs = (lam**2 - (2*self.x)) % self.p
+        ys = (lam * (self.x - xs) - self.y) % self.p
+        return Point(self.curve, xs, ys)
 
     def add(self, other):
         # Write a function that adds a Point object (or a PointInf object) to the current Point object and returns the resulting Point object
-        raise NotImplementedError()
+        if isinstance(other, PointInf):
+            return Point(self.curve, self.x, self.y)
+        else:
+            if self.is_equal(other):
+                return self.double()
+            elif self.is_equal(other.negate()):
+                return PointInf(self.curve)
+            else: # see lec
+                lam = ((other.y - self.y) * mod_inv((other.x - self.x), self.p)) % self.p
+                x3 = (lam**2 - self.x - other.x) % self.p
+                y3 = (lam * (self.x - x3) + ((-self.y) % self.p)) % self.p
+                return Point(self.curve, x3, y3)
+
 
     def scalar_multiply(self, scalar):
         # Write a function that performs a scalar multiplication on the current Point object and returns the resulting Point object 
         # Make sure to check that the scalar is of type int or long
         # Your function need not be "constant-time"
-        raise NotImplementedError()
+        if not isinstance(scalar, int):
+            raise NotImplementedError()
+        else:
+            res = Point(self.curve, self.x, self.y)
+            bin = '{0:b}'.format(scalar)
+            for bit in bin:
+                res = res.double()
+                if bit == '1':
+                    res = res.add(self)
+            
+        return res
 
+    
     def scalar_multiply_Montgomery_Ladder(self, scalar):
         # Write a function that performs a "constant-time" scalar multiplication on the current Point object and returns the resulting Point object 
         # Make sure to check that the scalar is of type int or long
