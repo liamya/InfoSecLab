@@ -86,7 +86,7 @@ class PointInf(object):
         # Write a function that adds a Point object (or a PointInf object) to a PointInf object. 
         # See below for the description of a Point object
         # Make sure to output the correct kind of object depending on whether "other" is a Point object or a PointInf object 
-        if isinstance(self, other):
+        if isinstance(other, PointInf):
             return PointInf(self.curve)
         else:
             return Point(self.curve, other.x, other.y)
@@ -147,13 +147,12 @@ class Point(object):
         if not isinstance(scalar, int):
             raise NotImplementedError()
         else:
-            res = Point(self.curve, self.x, self.y)
+            res = PointInf(self.curve)
             bin = '{0:b}'.format(scalar)
             for bit in bin:
                 res = res.double()
                 if bit == '1':
                     res = res.add(self)
-            
         return res
 
     
