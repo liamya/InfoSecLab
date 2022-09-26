@@ -193,8 +193,12 @@ def Sign_FixedNonce(params, k, x, msg):
 def Sign(params, x, msg):
     # Write a function that takes as input an ECDSA_Params object, a signing key x, and a message msg, and outputs a signature (r, s)
     # The nonce is to be generated uniformly at random in the appropriate range
-    k = random.randint(1, params.q)
-    (r,s) = Sign_FixedNonce(params, k, x, msg)
+    # see lecture, slide 33
+    r = 0
+    s = 0
+    while r == 0 or s == 0:
+        k = random.randint(1, params.q)
+        (r,s) = Sign_FixedNonce(params, k, x, msg)
 
     return (r,s)
 
