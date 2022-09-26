@@ -121,7 +121,7 @@ class Point(object):
         # Write a function that doubles a Point object and returns the resulting Point object
         lam = (3 * (self.x**2) + self.curve.a) * mod_inv(2 * self.y, self.p) % self.p
         xs = (lam**2 - (2*self.x)) % self.p
-        ys = (lam * (self.x - xs) - self.y) % self.p
+        ys = (-(self.y + (lam*(xs - self.x)))) % self.p
         return Point(self.curve, xs, ys)
 
     def add(self, other):
@@ -131,7 +131,7 @@ class Point(object):
         else:
             if self.is_equal(other):
                 return self.double()
-            elif self.is_equal(other.negate()):
+            elif self.x == other.x and self.y != other.y:
                 return PointInf(self.curve)
             else: # see lec
                 lam = ((other.y - self.y) * mod_inv((other.x - self.x), self.p)) % self.p
