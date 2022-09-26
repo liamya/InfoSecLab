@@ -114,6 +114,7 @@ class Point(object):
     def negate(self):
         # Write a function that negates a Point object and returns the resulting Point object
         # Ths is an optional extension and is not evaluated
+        # see lec
         y2 = (-self.y) % self.p
         return Point(self.curve, self.x, y2)
 
@@ -131,8 +132,8 @@ class Point(object):
         else:
             if self.is_equal(other):
                 return self.double()
-            # TODO: im not sure about this one, should be P + (-P) = O
-            elif self.x == other.x and self.y != other.y:
+            # see lec: P + (-P) = O
+            elif self.is_equal(other.negate()):
                 return PointInf(self.curve)
             else: 
                 # TODO: check ys with lecture
