@@ -89,7 +89,7 @@ class PointInf(object):
         if isinstance(other, PointInf):
             return PointInf(self.curve)
         else:
-            return other
+            return Point(self.curve, other.x, other.y)
 
 
 # A point on an elliptic curve is represented as an object of type Point. 
@@ -119,7 +119,7 @@ class Point(object):
 
     def double(self):
         # Write a function that doubles a Point object and returns the resulting Point object
-        lam = (3* (self.x**2) +  self.curve.a) * mod_inv(2*self.y, self.p) % self.p
+        lam = ((3* (self.x**2) +  self.curve.a) * mod_inv(2*self.y, self.p)) % self.p
         xs = (lam**2 - (2*self.x)) % self.p
         ys = (-(self.y + (lam*(xs-self.x)))) % self.p
         return Point(self.curve, xs, ys)
@@ -135,14 +135,28 @@ class Point(object):
             elif self.x == other.x and self.y != other.y:
                 return PointInf(self.curve)
             else: 
-                # TODO: check lam
-                lam = (self.y - other.y) * mod_inv((self.x-other.x), self.p)  % self.p
+                # TODO: check ys with lecture
+                lam = ((self.y - other.y) * mod_inv((self.x-other.x), self.p))  % self.p
+                xs = (lam**2 - self.x - other.x) % self.p
+                ys = (-(self.y + (lam*(xs-self.x)))) % self.p
+                return Point(self.curve, xs, ys)
+
 
     def scalar_multiply(self, scalar):
         # Write a function that performs a scalar multiplication on the current Point object and returns the resulting Point object 
         # Make sure to check that the scalar is of type int or long
         # Your function need not be "constant-time"
-        raise NotImplementedError()
+        # see lec for double and add
+        if not isinstance(scalar, int): # python 3: int included long values
+            raise ArithmeticError("only accept int/long values for scalar multiplication")
+        else:
+            res = PointInf(self.curve)
+            bin = '{0:b}'.format(scalar)
+            for bit in bin:
+                res = res.double()
+                if bit == '1':
+                    res = res.add(self)
+        return res
 
     def scalar_multiply_Montgomery_Ladder(self, scalar):
         # Write a function that performs a "constant-time" scalar multiplication on the current Point object and returns the resulting Point object 
@@ -163,21 +177,44 @@ class ECDSA_Params(object):
 
 def KeyGen(params):
     # Write a function that takes as input an ECDSA_Params object and outputs the key pair (x, Q)
-    raise NotImplementedError()
+    x = random.randint(1, params.q-1)
+    Q = params.P.scalar_multiply(x)
+    return (x, Q)
 
 def Sign_FixedNonce(params, k, x, msg):
     # Write a function that takes as input an ECDSA_Params object, a fixed nonce k, a signing key x, and a message msg, and outputs a signature (r, s)
-    raise NotImplementedError()
+    h = bits_to_int(hash_message_to_bits(msg), params.q)
+    Ps = (params.P).scalar_multiply(k)
+    r = Ps.x % params.q
+    s = (mod_inv(k, params.q) * (h+(x*r))) % params.q
+    return (r,s)
 
 def Sign(params, x, msg):
     # Write a function that takes as input an ECDSA_Params object, a signing key x, and a message msg, and outputs a signature (r, s)
     # The nonce is to be generated uniformly at random in the appropriate range
-    raise NotImplementedError()
+    k = random.randint(1, params.q)
+    (r,s) = Sign_FixedNonce(params, k, x, msg)
+
+    return (r,s)
 
 def Verify(params, Q, msg, r, s):
     # Write a function that takes as input an ECDSA_Params object, a verification key Q, a message msg, and a signature (r, s)
     # The output should be either 0 (indicating failure) or 1 (indicating success)
-    raise NotImplementedError()
+    if r < 1 or r > (params.q-1):
+        return 0
+    if s < 1 or s > (params.q-1):
+        return 0
+    
+    h = bits_to_int(hash_message_to_bits(msg), params.q)
+    w = mod_inv(s, params.q)
+    u1 = (w*h) % params.q
+    u2 = (w*r) % params.q
+    Z = (params.P).scalar_multiply(u1).add(Q.scalar_multiply(u2))
+
+    if r == (Z.x % params.q):
+        return 1
+    else:
+        return 0
 
 
 from module_1_ECC_ECDSA_tests import run_tests
