@@ -134,7 +134,7 @@ class Point(object):
             elif self.x == other.x and self.y != other.y:
                 return PointInf(self.curve)
             else: # see lec
-                lam = ((other.y - self.y) * mod_inv((other.x - self.x), self.p)) % self.p
+                lam = ((self.y - other.y) * mod_inv((self.x- other.x), self.p)) % self.p
                 x3 = (lam**2 - self.x - other.x) % self.p
                 y3 = (lam * (self.x - x3) + ((-self.y) % self.p)) % self.p
                 return Point(self.curve, x3, y3)

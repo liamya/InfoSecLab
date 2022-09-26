@@ -121,11 +121,22 @@ class Point(object):
         # Write a function that doubles a Point object and returns the resulting Point object
         lam = (3* (self.x**2) +  self.curve.a) * mod_inv(2*self.y, self.p) % self.p
         xs = (lam**2 - (2*self.x)) % self.p
-        y2 = (lam * (self.x - xs))
+        ys = (-(self.y + (lam*(xs-self.x)))) % self.p
+        return Point(self.curve, xs, ys)
 
     def add(self, other):
         # Write a function that adds a Point object (or a PointInf object) to the current Point object and returns the resulting Point object
-        raise NotImplementedError()
+        if isinstance(other, PointInf):
+            return Point(self.curve, self.x, self.y)
+        else:
+            if self.is_equal(other):
+                return self.double()
+            # TODO: im not sure about this one, should be P + (-P) = O
+            elif self.x == other.x and self.y != other.y:
+                return PointInf(self.curve)
+            else: 
+                # TODO: check lam
+                lam = (self.y - other.y) * mod_inv((self.x-other.x), self.p)  % self.p
 
     def scalar_multiply(self, scalar):
         # Write a function that performs a scalar multiplication on the current Point object and returns the resulting Point object 
