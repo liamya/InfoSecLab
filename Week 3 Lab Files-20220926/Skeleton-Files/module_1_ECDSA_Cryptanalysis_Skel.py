@@ -11,12 +11,25 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 def egcd(a, b):
     # Implement the Euclidean algorithm for gcd computation
-    raise NotImplementedError()
-
+    # using same code from previous lab, TODO: ask TA if thats ok
+    # Update: he said its ok!
+    if a == 0:
+        return b, 0, 1
+    else:
+        g,y,x = egcd(b % a, a)
+        return g, x - (b // a) * y, y
+    
 def mod_inv(a, p):
     # Implement a function to compute the inverse of a modulo p
     # Hint: Use the gcd algorithm implemented above
-    raise NotImplementedError()
+    if a < 1:
+        return p-mod_inv(-a,p)
+    g,x,y = egcd(a,p)
+
+    if g != 1:
+        raise ArithmeticError("Modular inverse does not exist")
+    else:
+        return x % p
 
 def check_x(x, Q):
     """ Given a guess for the secret key x and a public key Q = [x]P,
@@ -38,25 +51,32 @@ def recover_x_known_nonce(k, h, r, s, q):
     # Implement the "known nonce" cryptanalytic attack on ECDSA
     # The function is given the nonce k, (h, r, s) and the base point order q
     # The function should compute and return the secret signing key x
-    raise NotImplementedError()
+    x = (mod_inv(r,q) * (k*s - h)) % q
+    return x
 
 def recover_x_repeated_nonce(h_1, r_1, s_1, h_2, r_2, s_2, q):
     # Implement the "repeated nonces" cryptanalytic attack on ECDSA
     # The function is given the (hashed-message, signature) pairs (h_1, r_1, s_1) and (h_2, r_2, s_2) generated using the same nonce
     # The function should compute and return the secret signing key x
-    raise NotImplementedError()
+    x = ((h_1*s_2 - h_2 * s_1) * mod_inv((r_2*s_1 - r_1*s_2),q)) % q
+    return x
 
 
 def MSB_to_Padded_Int(N, L, list_k_MSB):
     # Implement a function that does the following: 
     # Let a is the integer represented by the L most significant bits of the nonce k 
     # The function should return a.2^{N - L} + 2^{N -L -1}
-    raise NotImplementedError()
+    a = 0
+    for bit in list_k_MSB:
+        a = (a << 1) | bit
+
+    res = a * 2**(N-L) + 2**(N-L-1)
+    return res
 
 def LSB_to_Int(list_k_LSB):
     # Implement a function that does the following: 
     # Let a is the integer represented by the L least significant bits of the nonce k 
-    # The function should return a
+    # The function should return a ??? TODO
     raise NotImplementedError()
 
 def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algorithm="ecdsa"):
@@ -64,7 +84,10 @@ def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algo
     # The function is given a list of the L most significant bts of the N-bit nonce k, along with (h, r, s) and the base point order q
     # The function should return (t, u) computed as described in the lectures
     # In the case of EC-Schnorr, r may be set to h
-    raise NotImplementedError()
+    t = (r * mod_inv(s,q)) % q
+    z = (h*mod_inv(s,q)) % q
+    u = MSB_to_Padded_Int(N, L, list_k_MSB) - z
+    return (t,u)
 
 def setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
     # Implement a function that sets up n = num_Samples many instances for the hidden number problem (HNP)
@@ -72,7 +95,15 @@ def setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, 
     # The function should return a list of t values and a list of u values computed as described in the lectures
     # Hint: Use the function you implemented above to set up the t and u values for each instance
     # In the case of EC-Schnorr, list_r may be set to list_h
-    raise NotImplementedError()
+    t = []
+    u = []
+
+    for i in range(num_Samples):
+        (t_s, u_s) = setup_hnp_single_sample(N, L, listoflists_k_MSB[i], list_h[i], list_r[i], list_s[i], q, givenbits, algorithm)
+        t.append(t_s)
+        u.append(u_s)
+
+    return (t, u)
 
 def hnp_to_cvp(N, L, num_Samples, list_t, list_u, q):
     # Implement a function that takes as input an instance of HNP and converts it into an instance of the closest vector problem (CVP)
@@ -126,8 +157,54 @@ def recover_x_partial_nonce_SVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h,
     # The function should recover the secret signing key x from the output of the SVP solver and return it
     raise NotImplementedError()
 
+# own testing code: TODO: comment before submit!!!!
+
+"""
+q   = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
+
+list_k_MSB = [1,0,0,1,0,0,1,1,0,0,1,1,0,0,0,1,0,1,1,0,1,0,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,0,1,0,1,0,0,0,0,1,1,1,1,1,0,1,0,1,0,0,1,1,0,0,1,1,1,0,0,1,0,1,0,1,0,1,0,0,1,0,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,1,0,0,0,1,1,0,0,1,0,1,1,]
 
 
+h = 40486975916534473094362891519173006163331321367022210737537794685665135550740 
+r = 2599887089937253404344006052124417371810051578242702686693991270543365335513 
+s = 67330760927154883283279153345350424927695624629874283254165543075119816101003
+
+N = 256
+L = 128
+l
+(t,u) = setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algorithm="ecdsa")
+print("Testing WIlliam")
+print(t)
+print(u)
+
+"""
+
+q   = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
+nestedList = [[1, 5]]
+listoflists_k_MSB = [[1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,0,1,0,1,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,1,0,1,1,1,0,0,1,1,1,1,1,1,0,1,1,0,0,1,1,0,1,0,1,0,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,0,0,0,0,1,0,1,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0],
+    [0,0,0,0,1,1,0,1,0,1,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0,1,0,0,1,1,0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,1,1,1,0,1,1,0,1,1,0,1,1,1,0,0,0,1,0,1,1,0,0,1,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,0,0,1,0,0,1,0,0,0,1,1,0,1,1,0,1,0,1,0,0,1,1,0,1,1,1,1,1,0,0,0,0,1],
+    [0,0,1,0,1,0,0,1,1,0,0,1,1,1,0,1,1,0,0,1,0,0,0,0,0,0,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,0,1,1,1,0,1,1,0,0,1,1,1,0,1,0,1,0,1,0,1,1,0,0,1,1,0,1,0,1,0,1,1,0,1,1,1,0,1,1,1,0,0,1,0,1,1,0,1,1,1,0,1,0,0,1,0,0,0,1,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,0,1,1,0,0,0,0,0,0,1],
+    [0,0,0,1,1,1,1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,0,0,0,0,0,1,1,0,1,1,0,1,1,0,1,1,0,0,1,1,0,0,0,0,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,0,1,0,0,1,1,1,1,1,1,1,1],
+    [1,0,1,1,0,1,0,0,0,0,1,0,1,0,1,0,1,1,0,0,1,0,1,0,0,1,0,1,1,0,1,0,1,1,1,0,1,0,0,1,0,1,0,1,0,1,0,0,0,1,1,1,0,0,0,1,0,1,1,0,1,1,1,1,0,0,0,0,1,0,0,1,0,0,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,1,0,1,1,1,0,1,1,0,0,1,0,0,0,0,0,1,0,1,0,1,0,1,0,0,0,1,0,1,0,1,1,1,1,0,0,0,1]
+]
+list_h = [53587255018646766649366929761445263520588289974085164007791003592524300786856,92255010004322031700578648881153820869024394616292376385544824498220457132184,58718835091089030315016015430416018863376667084908539946409332614624098883365,21885430444463482694764703386347047586181776767178088530915395099876303569857,48222944448690727021865957867529225241421575091907648042040018560253341152938]
+list_r = [86650740806009248676924548791021411531128002524761943337366852110719556852783,85571057469794218222664143406738900502813537611542662523671806135824277560790,73706532566196797600540175909728263111945346739811427832248273009783517562535,18542311856423834642035103399802628509185707655777332329168239974949541266375,69973303654333831673738387648804641189367623545062105314526463185158406522370]
+list_s = [61673141712492429201103076862329639747659894086513332933883113480154908616994,72723065656456790043728442896109459240691424770121898239114476673586794127831,104798023990170995460147134633346919307495271521069945822399418971594476834879,12706672676671114233493645181512881611020875114875238286718605065948237298565,35162729381041556708199018195805592074241602412405847521869659206457930052664]
+
+N = 256
+L = 128
+num_Samples = 5
+"""
+list_t:
+52577997114672223753883884838446907937044890369779123641851702741673933300393 46932074166957065539638659849940887951519230105319925555368992340377571557053 84820553559080745583027261353897864800947979801839692244239877715725580095196 46126924907659506248203645645615709268615240765699118030706873306761182621719 106527631476304177425961197417196630686327314523441020909831540061123479757974 
+
+list_u:
+-26598885662765484140686768782705345637611731714845993249000446855150630095422 -18343995083279027201836925768237081749568866408831159039518306880772015070530 -60507380181525666167703212102998312065962102451471468546639975941493460559927 -50291170320876502474766269797299965339493724137492678004407216833402748486257 16931683542557590285509095950598728801081622707341508999965512941943990704574 
+"""
+(t_l,u_l) = setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa")
+print("printing all t,u paris")
+print(t_l)
+print(u_l)
 # testing code: do not modify
 
 from module_1_ECDSA_Cryptanalysis_tests import run_tests
