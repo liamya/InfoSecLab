@@ -61,23 +61,29 @@ def recover_x_repeated_nonce(h_1, r_1, s_1, h_2, r_2, s_2, q):
     x = ((h_1*s_2 - h_2 * s_1) * mod_inv((r_2*s_1 - r_1*s_2),q)) % q
     return x
 
+def bit_list_to_Int(list_k):
+    a = 0
+    for bit in list_k:
+        a = (a << 1) | bit
+
+    return a
 
 def MSB_to_Padded_Int(N, L, list_k_MSB):
     # Implement a function that does the following: 
     # Let a is the integer represented by the L most significant bits of the nonce k 
     # The function should return a.2^{N - L} + 2^{N -L -1}
-    a = 0
-    for bit in list_k_MSB:
-        a = (a << 1) | bit
+    a = bit_list_to_Int(list_k_MSB)
 
     res = a * 2**(N-L) + 2**(N-L-1)
     return res
+
+
 
 def LSB_to_Int(list_k_LSB):
     # Implement a function that does the following: 
     # Let a is the integer represented by the L least significant bits of the nonce k 
     # The function should return a ??? TODO
-    raise NotImplementedError()
+    return bit_list_to_Int(list_k_LSB)
 
 def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algorithm="ecdsa"):
     # Implement a function that sets up a single instance for the hidden number problem (HNP)
@@ -86,7 +92,9 @@ def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algo
     # In the case of EC-Schnorr, r may be set to h
     t = (r * mod_inv(s,q)) % q
     z = (h*mod_inv(s,q)) % q
-    u = MSB_to_Padded_Int(N, L, list_k_MSB) - z
+
+    # TODO: check length of list_k-MSB
+    u = (MSB_to_Padded_Int(N, L, list_k_MSB) - z) 
     return (t,u)
 
 def setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
@@ -110,7 +118,27 @@ def hnp_to_cvp(N, L, num_Samples, list_t, list_u, q):
     # The function is given as input a list of t values, a list of u values and the base point order q
     # The function should return the CVP basis matrix B (to be implemented as a nested list) and the CVP target vector u (to be implemented as a list)
     # NOTE: The basis matrix B and the CVP target vector u should be scaled appropriately. Refer lecture slides and lab sheet for more details 
-    raise NotImplementedError()
+    B_CVP = []
+    u_CVP = []
+
+    # scaling each entry in B_CVP and u_CVP to make them integral
+    scalar = 2**(L+1)
+
+    # generate each row for q*scalar except for t row
+    for i in range(num_Samples):
+        entry = [0] * (num_Samples+1)
+        entry[i] = q * scalar # q*scalar 0 0 0 ...
+        B_CVP.append(entry)
+    
+    t_row = [(t_i * scalar) for t_i in list_t]
+    # add 1/2(L+1) * 2(L+1) = 1 at the end
+    t_row.append(1)
+    B_CVP.append(t_row)
+
+    u_CVP = [(u_i * scalar) for u_i in list_u]
+    u_CVP.append(0)
+
+    return (B_CVP, u_CVP)
 
 def cvp_to_svp(N, L, num_Samples, cvp_basis_B, cvp_list_u):
     # Implement a function that takes as input an instance of CVP and converts it into an instance of the shortest vector problem (SVP)
@@ -118,7 +146,18 @@ def cvp_to_svp(N, L, num_Samples, cvp_basis_B, cvp_list_u):
     # The function is given as input a CVP basis matrix B and the CVP target vector u
     # The function should use the Kannan embedding technique to output the corresponding SVP basis matrix B' of apropriate dimensions.
     # The SVP basis matrix B' should again be implemented as a nested list
-    raise NotImplementedError()
+    B_SVP = []
+
+    # TODO: FIND correct M
+    M = 2**N
+    for b_i in cvp_basis_B:
+        b_i.append(0)
+        B_SVP.append(b_i)
+
+    cvp_list_u.append(M)
+
+    B_SVP.append(cvp_list_u)
+    return B_SVP
 
 
 def solve_cvp(cvp_basis_B, cvp_list_u):
@@ -126,7 +165,10 @@ def solve_cvp(cvp_basis_B, cvp_list_u):
     # The function is given as input a CVP basis matrix B and the CVP target vector u
     # The function should output the solution vector v (to be implemented as a list)
     # NOTE: The basis matrix B should be processed appropriately before being passes to the fpylll CVP-solver. See lab sheet for more details
-    raise NotImplementedError()
+    B_INT = IntegerMatrix.from_matrix(cvp_basis_B)
+    B_INT_LLL = LLL.reduction(B_INT)
+    v = CVP.closest_vector(B_INT_LLL, cvp_list_u)
+    return v
 
 def solve_svp(svp_basis_B):
     # Implement a function that takes as input an instance of SVP and solves it using in-built SVP-solver functions from the fpylll library
@@ -178,7 +220,7 @@ print(t)
 print(u)
 
 """
-
+"""
 q   = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
 nestedList = [[1, 5]]
 listoflists_k_MSB = [[1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,0,1,0,1,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,1,0,1,1,1,0,0,1,1,1,1,1,1,0,1,1,0,0,1,1,0,1,0,1,0,1,0,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,0,0,0,0,1,0,1,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0],
@@ -194,17 +236,19 @@ list_s = [6167314171249242920110307686232963974765989408651333293388311348015490
 N = 256
 L = 128
 num_Samples = 5
-"""
-list_t:
-52577997114672223753883884838446907937044890369779123641851702741673933300393 46932074166957065539638659849940887951519230105319925555368992340377571557053 84820553559080745583027261353897864800947979801839692244239877715725580095196 46126924907659506248203645645615709268615240765699118030706873306761182621719 106527631476304177425961197417196630686327314523441020909831540061123479757974 
 
-list_u:
--26598885662765484140686768782705345637611731714845993249000446855150630095422 -18343995083279027201836925768237081749568866408831159039518306880772015070530 -60507380181525666167703212102998312065962102451471468546639975941493460559927 -50291170320876502474766269797299965339493724137492678004407216833402748486257 16931683542557590285509095950598728801081622707341508999965512941943990704574 
-"""
+#list_t:
+#52577997114672223753883884838446907937044890369779123641851702741673933300393 46932074166957065539638659849940887951519230105319925555368992340377571557053 84820553559080745583027261353897864800947979801839692244239877715725580095196 46126924907659506248203645645615709268615240765699118030706873306761182621719 106527631476304177425961197417196630686327314523441020909831540061123479757974 
+
+#list_u:
+#-26598885662765484140686768782705345637611731714845993249000446855150630095422 -18343995083279027201836925768237081749568866408831159039518306880772015070530 -60507380181525666167703212102998312065962102451471468546639975941493460559927 -50291170320876502474766269797299965339493724137492678004407216833402748486257 16931683542557590285509095950598728801081622707341508999965512941943990704574 
+
 (t_l,u_l) = setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa")
 print("printing all t,u paris")
 print(t_l)
 print(u_l)
+
+"""
 # testing code: do not modify
 
 from module_1_ECDSA_Cryptanalysis_tests import run_tests
