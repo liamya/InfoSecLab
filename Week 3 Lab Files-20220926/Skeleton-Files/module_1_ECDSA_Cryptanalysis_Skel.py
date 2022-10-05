@@ -90,12 +90,15 @@ def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algo
     # The function is given a list of the L most significant bts of the N-bit nonce k, along with (h, r, s) and the base point order q
     # The function should return (t, u) computed as described in the lectures
     # In the case of EC-Schnorr, r may be set to h
-    t = (r * mod_inv(s,q)) % q
-    z = (h*mod_inv(s,q)) % q
+    if givenbits == "msbs" and algorithm == "ecdsa": 
+        t = (r * mod_inv(s,q)) % q
+        z = (h*mod_inv(s,q)) % q
 
-    # TODO: check length of list_k-MSB
-    u = (MSB_to_Padded_Int(N, L, list_k_MSB) - z) 
-    return (t,u)
+        u = (MSB_to_Padded_Int(N, L, list_k_MSB) - z) 
+        return (t,u)
+    elif givenbits == "lsbs" and algorithm == "ecdsa":
+        a_s = LSB_to_Int(list_k_MSB)
+
 
 def setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
     # Implement a function that sets up n = num_Samples many instances for the hidden number problem (HNP)
@@ -177,27 +180,54 @@ def solve_svp(svp_basis_B):
     # NOTE: Recall from the lecture and also from the exercise session that for ECDSA cryptanalysis based on partial nonces, you might want
     #       your function to include in the list of candidate vectors the *second* shortest vector (or even a later one). 
     # If required, figure out how to get the in-built SVP-solver functions from the fpylll library to return the second (or later) shortest vector
-    raise NotImplementedError()
+    
+    # SVP requires Integer matrices as well
+    B_INT = IntegerMatrix.from_matrix(svp_basis_B)
+    B_INT_LLL = LLL.reduction(B_INT) ## lec: LLL approx. solves SVP for lattice
+    x = SVP.shortest_vector(B_INT_LLL) 
+
+    candidates = list(x)
+
+    # add all other candidate vectors (TODO)
+    for row in B_INT_LLL:
+        candidates.extend(row)
+
+    return candidates
+
 
 
 def recover_x_partial_nonce_CVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
     # Implement the "repeated nonces" cryptanalytic attack on ECDSA and EC-Schnorr using the in-built CVP-solver functions from the fpylll library
     # The function is partially implemented for you. Note that it invokes some of the functions that you have already implemented
-    list_t, list_u = setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q)
+    # TODO: givenbits and algorithm, set as msb und ecdsa per default
+    list_t, list_u = setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits, algorithm)
     cvp_basis_B, cvp_list_u = hnp_to_cvp(N, L, num_Samples, list_t, list_u, q)
-    v_List = solve_cvp(cvp_basis_B, cvp_list_u)
-    # The function should recover the secret signing key x from the output of the CVP solver and return it
-    raise NotImplementedError()
+    v_list = solve_cvp(cvp_basis_B, cvp_list_u)
+
+    x = v_list[num_Samples] % q
+    check = check_x(x, Q)
+    if check == False:
+       print("ALARMMMM") 
+
+
+    return x
+
 
 def recover_x_partial_nonce_SVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
     # Implement the "repeated nonces" cryptanalytic attack on ECDSA and EC-Schnorr using the in-built CVP-solver functions from the fpylll library
     # The function is partially implemented for you. Note that it invokes some of the functions that you have already implemented
-    list_t, list_u = setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q)
+    list_t, list_u = setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits, algorithm)
     cvp_basis_B, cvp_list_u = hnp_to_cvp(N, L, num_Samples, list_t, list_u, q)
     svp_basis_B = cvp_to_svp(N, L, num_Samples, cvp_basis_B, cvp_list_u)
     list_of_f_List = solve_svp(svp_basis_B)
+
+    for f in list_of_f_List:
+        for u in cvp_list_u:
+            v_temp = (u-f) % q #according to exercise session
+            if check_x(v_temp, Q):
+                return v_temp
     # The function should recover the secret signing key x from the output of the SVP solver and return it
-    raise NotImplementedError()
+    raise ArithmeticError("Could not find the secret key out of all candidates")
 
 # own testing code: TODO: comment before submit!!!!
 
