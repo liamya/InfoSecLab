@@ -97,7 +97,26 @@ def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algo
         u = (MSB_to_Padded_Int(N, L, list_k_MSB) - z) 
         return (t,u)
     elif givenbits == "lsbs" and algorithm == "ecdsa":
+        # rearranged equation in (1) for t, u
         a_s = LSB_to_Int(list_k_MSB)
+        t = mod_inv(2**L, q) * r * mod_inv(s, q) % q
+        u = a_s * mod_inv(2**L, q) - h*mod_inv(s, q)*mod_inv(2**L, q)
+        return (t,u)
+    elif givenbits == "msbs" and algorithm == "ecschnorr":
+        # same like in ecdsa, formulate equation in form hx = k - s + e where k = MSB padded
+        t = h % q
+        u = (MSB_to_Padded_Int(N, L, list_k_MSB) - s) 
+        return (t,u)
+    elif givenbits == "lsbs" and algorithm == "ecschnorr":
+        # k=e*2^L + â
+        # rearrange equation like in ecdsa 
+        t = (mod_inv(2**L, q) * h) % q
+        a_s = LSB_to_Int(list_k_MSB)
+        u = (a_s * mod_inv(2**L, q)) - (s * mod_inv(2**L, q))
+        return (t,u)
+
+
+
 
 
 def setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
@@ -216,6 +235,7 @@ def recover_x_partial_nonce_CVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h,
 def recover_x_partial_nonce_SVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
     # Implement the "repeated nonces" cryptanalytic attack on ECDSA and EC-Schnorr using the in-built CVP-solver functions from the fpylll library
     # The function is partially implemented for you. Note that it invokes some of the functions that you have already implemented
+    # The function should recover the secret signing key x from the output of the SVP solver and return it
     list_t, list_u = setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits, algorithm)
     cvp_basis_B, cvp_list_u = hnp_to_cvp(N, L, num_Samples, list_t, list_u, q)
     svp_basis_B = cvp_to_svp(N, L, num_Samples, cvp_basis_B, cvp_list_u)
@@ -226,7 +246,8 @@ def recover_x_partial_nonce_SVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h,
             v_temp = (u-f) % q #according to exercise session
             if check_x(v_temp, Q):
                 return v_temp
-    # The function should recover the secret signing key x from the output of the SVP solver and return it
+
+    # if we didnt find it yet, raise error
     raise ArithmeticError("Could not find the secret key out of all candidates")
 
 # own testing code: TODO: comment before submit!!!!
