@@ -8,6 +8,7 @@ from fpylll import SVP
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
+# abgabe ready 06.10.2022
 
 def egcd(a, b):
     # Implement the Euclidean algorithm for gcd computation
