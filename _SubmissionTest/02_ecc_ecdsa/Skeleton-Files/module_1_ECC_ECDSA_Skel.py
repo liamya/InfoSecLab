@@ -3,6 +3,9 @@ import random
 import warnings
 import hashlib
 
+
+# abgabe ready 06.10.2022
+
 # Euclidean algorithm for gcd computation
 def egcd(a, b):
     if a == 0:

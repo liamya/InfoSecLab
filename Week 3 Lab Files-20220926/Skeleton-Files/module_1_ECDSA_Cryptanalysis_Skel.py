@@ -63,6 +63,7 @@ def recover_x_repeated_nonce(h_1, r_1, s_1, h_2, r_2, s_2, q):
 
 def bit_list_to_Int(list_k):
     a = 0
+    
     for bit in list_k:
         a = (a << 1) | bit
 
@@ -82,7 +83,7 @@ def MSB_to_Padded_Int(N, L, list_k_MSB):
 def LSB_to_Int(list_k_LSB):
     # Implement a function that does the following: 
     # Let a is the integer represented by the L least significant bits of the nonce k 
-    # The function should return a ??? TODO
+    # The function should return a which is just the integer of the leaked bits
     return bit_list_to_Int(list_k_LSB)
 
 def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algorithm="ecdsa"):
@@ -146,13 +147,13 @@ def hnp_to_cvp(N, L, num_Samples, list_t, list_u, q):
 
     # generate each row for q*scalar except for t row
     for i in range(num_Samples):
-        entry = [0] * (num_Samples+1)
+        entry = [0] * (num_Samples+1) # 0 row
         entry[i] = q * scalar # q*scalar 0 0 0 ...
         B_CVP.append(entry)
     
     t_row = [(t_i * scalar) for t_i in list_t]
-    # add 1/2(L+1) * 2(L+1) = 1 at the end
-    t_row.append(1)
+    
+    t_row.append(1) # add 1/2(L+1) * 2(L+1) = 1 at the end
     B_CVP.append(t_row)
 
     u_CVP = [(u_i * scalar) for u_i in list_u]
