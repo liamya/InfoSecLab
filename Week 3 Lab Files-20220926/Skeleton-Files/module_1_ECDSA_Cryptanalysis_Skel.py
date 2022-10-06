@@ -117,8 +117,6 @@ def setup_hnp_single_sample(N, L, list_k_MSB, h, r, s, q, givenbits="msbs", algo
 
 
 
-
-
 def setup_hnp_all_samples(N, L, num_Samples, listoflists_k_MSB, list_h, list_r, list_s, q, givenbits="msbs", algorithm="ecdsa"):
     # Implement a function that sets up n = num_Samples many instances for the hidden number problem (HNP)
     # For each instance, the function is given a list the L most significant bits of the N-bit nonce k, along with (h, r, s) and the base point order q
@@ -202,13 +200,13 @@ def solve_svp(svp_basis_B):
     
     # SVP requires Integer matrices as well
     B_INT = IntegerMatrix.from_matrix(svp_basis_B)
-    B_INT_LLL = LLL.reduction(B_INT) ## lec: LLL approx. solves SVP for lattice
-    x = SVP.shortest_vector(B_INT_LLL) 
+    #B_INT_LLL = LLL.reduction(svp_basis_B) ## lreduction not needed
+    SVP.shortest_vector(B_INT) # According to https://github.com/fplll/fpylll/blob/master/docs/tutorial.rst
+    # the shortest vector will be the same as A[0], assuming the second shortest is in A[1] => the i-th shortest in A[i]
 
-    candidates = list(x)
-
+    candidates = []
     # add all other candidate vectors (TODO)
-    for row in B_INT_LLL:
+    for row in B_INT:
         candidates.extend(row)
 
     return candidates
@@ -226,8 +224,7 @@ def recover_x_partial_nonce_CVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h,
     x = v_list[num_Samples] % q
     check = check_x(x, Q)
     if check == False:
-       print("ALARMMMM") 
-
+       print("x coudlnt be recovered with cvp") 
 
     return x
 
@@ -240,7 +237,8 @@ def recover_x_partial_nonce_SVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h,
     cvp_basis_B, cvp_list_u = hnp_to_cvp(N, L, num_Samples, list_t, list_u, q)
     svp_basis_B = cvp_to_svp(N, L, num_Samples, cvp_basis_B, cvp_list_u)
     list_of_f_List = solve_svp(svp_basis_B)
-
+    #print("length of u " + str(len(cvp_list_u)))
+    #print("length of f " + str(len(list_of_f_List)))
     for f in list_of_f_List:
         for u in cvp_list_u:
             v_temp = (u-f) % q #according to exercise session
