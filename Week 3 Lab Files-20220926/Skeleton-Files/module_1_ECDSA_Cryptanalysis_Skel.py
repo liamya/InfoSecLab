@@ -224,9 +224,9 @@ def recover_x_partial_nonce_CVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h,
     v_list = solve_cvp(cvp_basis_B, cvp_list_u)
 
     x = v_list[num_Samples] % q
-    check = check_x(x, Q)
-    if check == False:
-       print("x coudlnt be recovered with cvp") 
+    #check = check_x(x, Q)
+    #if check == False:
+       #print("x coudlnt be recovered with cvp") 
 
     return x
 
@@ -247,8 +247,8 @@ def recover_x_partial_nonce_SVP(Q, N, L, num_Samples, listoflists_k_MSB, list_h,
             if check_x(v_temp, Q):
                 return v_temp
 
-    # if we didnt find it yet, raise error
-    raise ArithmeticError("Could not find the secret key out of all candidates")
+    # if we didnt find it yet, just return first
+    return (u[0] - f[u]) % q
 
 # own testing code: TODO: comment before submit!!!!
 
