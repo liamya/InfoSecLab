@@ -1,0 +1,8 @@
+{
+	"name": "JDK",
+	"image": "eclipse-temurin:17-alpine",
+	"extensions": ["vscjava.vscode-java-pack"],
+	"runArgs": ["--memory=2g"],
+	"postCreateCommand": "apk add --update git bash zip",
+	"postAttachCommand": "apk add --update git bash zip"
+}

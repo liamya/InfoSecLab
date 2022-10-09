@@ -1,0 +1,6 @@
+descriptions:
+  taskdescription:
+    name: taskdescription
+    default: true
+# Optionally add mulitple versions here.
+# Use the file name without the .md extension as key and add a `name:` to it.

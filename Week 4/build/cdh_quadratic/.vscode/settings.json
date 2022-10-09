@@ -1,0 +1,7 @@
+{
+    "java.project.sourcePaths": [
+        "bin",
+        "src",
+        "lib"
+    ]
+}
