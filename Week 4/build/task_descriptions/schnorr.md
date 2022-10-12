@@ -7,7 +7,7 @@ The secret key is $x \in \mathbb{Z}_p$ and the public key is $y = g^{x}$ where g
 To generate a signature on a message $m$, using the secret key $x$, we do the following.
   * choose $r \gets \mathbb{Z}_p$ uniformly at random
   * set $R = g^r$
-  * compute the hash $c = H(Rm,R)$
+  * compute the hash $c = H(m,R)$
   * set $s = r + c\cdot x$
   * the output signature is $c, s$
 
